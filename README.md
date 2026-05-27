@@ -9,7 +9,7 @@ are hidden** inside a zkSNARK (Groth16) anonymity pool.
 
 Your agents transact. Nobody watches.
 
-**Live demo:** [shield-mcp.netlify.app](https://shield-mcp.netlify.app)
+**Live demo:** [shieldmcp.sh](https://shieldmcp.sh) · **Endpoint:** `https://mcp.shieldmcp.sh/mcp`
 
 ---
 
@@ -45,7 +45,7 @@ and the relayer fee is paid from inside the pool.
 | `shield` | deposit a public ERC-20 into the shielded pool |
 | `private_transfer` | send privately to a shielded address (relayed, unlinkable) |
 | `unshield` | withdraw from the pool to a public address |
-| `private_swap` | private swap via an aggregator *(in progress)* |
+| `private_swap` | private swap (tokenIn → tokenOut), aggregator-routed, output re-shielded |
 
 ## Privacy + compliance
 
@@ -90,8 +90,8 @@ Prefer to self-host locally? See **[TUTORIAL.md](./TUTORIAL.md)** for both paths
 
 ## Status
 
-`shield`, `private_transfer` and `unshield` are validated on Base mainnet.
-`private_swap` is in progress.
+`shield`, `private_transfer`, `unshield` and `private_swap` are all validated
+live on Base mainnet.
 
 ## License
 

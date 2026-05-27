@@ -10,7 +10,7 @@ Give your AI agent private, shielded transactions on Base. Two ways: the
 Point your MCP-capable agent at the hosted shield//mcp endpoint and pass your
 wallet key as a header. Nothing to clone, build, or run.
 
-**Endpoint:** `https://mcp.shieldmcp.sh/mcp`  *(direct: `https://shield-mcp.fly.dev/mcp`)*
+**Endpoint:** `https://mcp.shieldmcp.sh/mcp`
 
 Add it to your agent's MCP config (example):
 
@@ -105,5 +105,6 @@ Register it with your agent host (e.g. Claude Desktop):
 | `shield` | `token`, `amount` |
 | `private_transfer` | `token`, `amount`, `recipient`, `feeToken?` |
 | `unshield` | `token`, `amount`, `recipient`, `useRelayer?`, `feeToken?` |
+| `private_swap` | `tokenIn`, `amount`, `tokenOut`, `feeToken?` |
 
 Questions? Ask the ghost at [shieldmcp.sh](https://shieldmcp.sh).
