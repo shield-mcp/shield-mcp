@@ -68,8 +68,25 @@ compliant privacy and a criminal mixer.
 
 ## Get started
 
-See **[TUTORIAL.md](./TUTORIAL.md)** for the full walkthrough — install, configure,
-connect to an MCP-capable agent, and run your first shielded transaction.
+**Hosted (no install).** Point your MCP-capable agent at the hosted endpoint and
+pass a dedicated agent wallet key as a header:
+
+```json
+{
+  "mcpServers": {
+    "shield": {
+      "url": "https://mcp.shieldmcp.sh/mcp",
+      "headers": { "x-shield-key": "0xYOUR_AGENT_WALLET_PRIVATE_KEY" }
+    }
+  }
+}
+```
+
+Non-custodial: your key lives only in your session's memory (never stored, logged,
+or written to disk) and is dropped when the session ends. The server holds no
+wallet and no funds. Use a dedicated agent wallet.
+
+Prefer to self-host locally? See **[TUTORIAL.md](./TUTORIAL.md)** for both paths.
 
 ## Status
 

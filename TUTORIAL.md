@@ -1,49 +1,51 @@
 # shield//mcp — tutorial
 
-A step-by-step guide to giving your AI agent private, shielded transactions on Base.
+Give your AI agent private, shielded transactions on Base. Two ways: the
+**hosted** endpoint (no install), or **self-host** locally.
 
-## 1. Prerequisites
+---
 
-- Node.js 20+
-- An MCP-capable agent/client (e.g. Claude Desktop, or any MCP host)
-- A dedicated EVM private key for the agent (a fresh wallet)
-- A Base RPC URL (the public `https://mainnet.base.org` works)
-- A little ETH on Base for gas, and the token you want to shield (e.g. USDC)
+## Option A — Hosted (remote MCP, no install) · recommended
 
-## 2. Install
+Point your MCP-capable agent at the hosted shield//mcp endpoint and pass your
+wallet key as a header. Nothing to clone, build, or run.
+
+**Endpoint:** `https://mcp.shieldmcp.sh/mcp`  *(direct: `https://shield-mcp.fly.dev/mcp`)*
+
+Add it to your agent's MCP config (example):
+
+```json
+{
+  "mcpServers": {
+    "shield": {
+      "url": "https://mcp.shieldmcp.sh/mcp",
+      "headers": { "x-shield-key": "0xYOUR_AGENT_WALLET_PRIVATE_KEY" }
+    }
+  }
+}
+```
+
+> **Non-custodial.** Your key is used only in your session's server memory to
+> derive your shielded keypair and sign — it is **never stored, logged, or
+> written to disk**, and is dropped when your session ends. The server holds no
+> wallet and no funds. Use a **dedicated agent wallet**, not your main one.
+
+That's it — your agent now has the shield tools. Jump to [§3](#3-your-first-shielded-flow).
+
+---
+
+## Option B — Self-host (local, stdio)
+
+Run the server yourself; your key never leaves your machine.
 
 ```bash
-git clone https://github.com/shield-mcp/shield-mcp.git
-cd shield-mcp
+git clone https://github.com/shield-mcp/shield-mcp.git && cd shield-mcp
 npm install
+cp .env.example .env       # set SHIELD_PRIVATE_KEY + SHIELD_RPC_URLS
 npm run build
 ```
 
-## 3. Configure
-
-Copy the example env and set your values:
-
-```bash
-cp .env.example .env
-```
-
-```ini
-# .env
-SHIELD_RPC_URLS=https://mainnet.base.org
-SHIELD_PRIVATE_KEY=0x...   # dedicated agent wallet — keep it secret
-```
-
-> The private key never leaves your machine. shield//mcp derives the agent's
-> shielded keypair locally from a signature by this key.
-
-## 4. Run as an MCP server
-
-```bash
-node dist/index.js
-```
-
-It speaks MCP over stdio. Register it with your agent host. For Claude Desktop, add it
-to your MCP config:
+Register it with your agent host (e.g. Claude Desktop):
 
 ```json
 {
@@ -53,48 +55,47 @@ to your MCP config:
       "args": ["/absolute/path/to/shield-mcp/dist/index.js"],
       "env": {
         "SHIELD_RPC_URLS": "https://mainnet.base.org",
-        "SHIELD_PRIVATE_KEY": "0x..."
+        "SHIELD_PRIVATE_KEY": "0xYOUR_AGENT_WALLET_PRIVATE_KEY"
       }
     }
   }
 }
 ```
 
-## 5. Your first shielded flow
+---
 
-Once connected, your agent has the shield tools. Example conversation:
+## 1. Prerequisites
 
-**Check status & address**
-> *agent:* call `shield_status` → `{ chain: "Base", accessToken: ..., address: "0x…" }`
-> *agent:* call `get_shielded_address` → your `0zk`-style private receive address.
+- An MCP-capable agent/client
+- A **dedicated** EVM wallet private key for the agent (a fresh wallet)
+- A little ETH on Base for gas, and the token you want to shield (e.g. USDC)
 
-**Shield funds (public → private)**
-> *"shield 5 USDC."*
-> agent calls `shield(token: "USDC", amount: "5000000")` → deposits into the pool.
-> *(amounts are in base units / wei — USDC has 6 decimals, so 5 USDC = `5000000`.)*
+## 2. Notes
 
-**Check private balance**
-> *"what's my shielded balance?"*
-> agent calls `get_private_balance` → lists shielded holdings.
+- **Amounts are strings in base units (wei).** USDC/USDT = 6 decimals (5 USDC = `5000000`), ETH = 18.
+- **Tokens** can be passed by symbol (`USDC`) or `0x` address on Base.
+- **Under $10k = zero verification.** Agents onboard with no friction.
+- First call of a session warms up the shielded state (a few seconds–minutes).
+
+## 3. Your first shielded flow
+
+**Status & address**
+> `shield_status` → `{ chain: "Base", address, accessToken }`
+> `get_shielded_address` → your shielded receive address.
+
+**Shield (public → private)**
+> *"shield 5 USDC"* → `shield(token: "USDC", amount: "5000000")`
+
+**Private balance**
+> *"what's my shielded balance?"* → `get_private_balance`
 
 **Pay privately (private → private)**
-> *"send 2 USDC privately to `<shielded address>`."*
-> agent calls `private_transfer(token: "USDC", amount: "2000000", recipient: "<shielded addr>")`.
-> Sender, recipient and amount stay hidden; relayed natively.
+> *"send 2 USDC privately to `<shielded address>`"* → `private_transfer(token, "2000000", recipient)`
 
 **Withdraw (private → public)**
-> *"unshield 1 USDC to `0xRecipient`."*
-> agent calls `unshield(token: "USDC", amount: "1000000", recipient: "0xRecipient")`.
+> *"unshield 1 USDC to `0xRecipient`"* → `unshield(token, "1000000", "0xRecipient")`
 
-## 6. Notes & tips
-
-- **Amounts are strings in base units (wei).** USDC/USDT = 6 decimals, ETH = 18.
-- **Under $10k = zero verification.** Agents onboard with no friction.
-- **Tokens** can be passed by symbol (`USDC`) or `0x` address on Base.
-- **Fees** for relayed transfers are paid from inside the pool in the fee token.
-- Keep one private op settling before firing the next, so balances refresh.
-
-## 7. Tool reference
+## 4. Tool reference
 
 | tool | args |
 |------|------|
@@ -105,4 +106,4 @@ Once connected, your agent has the shield tools. Example conversation:
 | `private_transfer` | `token`, `amount`, `recipient`, `feeToken?` |
 | `unshield` | `token`, `amount`, `recipient`, `useRelayer?`, `feeToken?` |
 
-Questions? Ask the ghost at [shield-mcp.netlify.app](https://shield-mcp.netlify.app).
+Questions? Ask the ghost at [shieldmcp.sh](https://shieldmcp.sh).
