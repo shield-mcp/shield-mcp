@@ -10,6 +10,7 @@ const originalFetch = globalThis.fetch;
 const originalHttpRequest = http.request;
 const originalHttpsRequest = https.request;
 const originalOdosKey = process.env.ODOS_API_KEY;
+const originalRouteUrl = process.env.SHIELD_ODOS_ROUTE_URL;
 
 function clearPolicyEnv() {
   delete process.env.SHIELD_RECIPIENT_ALLOWLIST;
@@ -23,11 +24,17 @@ afterEach(() => {
   https.request = originalHttpsRequest;
   if (originalOdosKey == null) delete process.env.ODOS_API_KEY;
   else process.env.ODOS_API_KEY = originalOdosKey;
+  if (originalRouteUrl == null) delete process.env.SHIELD_ODOS_ROUTE_URL;
+  else process.env.SHIELD_ODOS_ROUTE_URL = originalRouteUrl;
   clearPolicyEnv();
   resetPolicyStateForTests();
 });
 
-function installWireCapture(privateKey) {
+// Patch every outbound channel (node http/https + global fetch). On each call,
+// assert the local private key NEVER appears. Optionally assert no shield-operated
+// host is contacted — true for the self-host path; relaxed for the hosted-helper
+// path, which fetches PUBLIC route data only and still must never see the key.
+function installWireCapture(privateKey, { forbidShieldHost = true } = {}) {
   const key = privateKey.toLowerCase();
   const keyNoPrefix = key.slice(2);
   const captures = [];
@@ -36,7 +43,9 @@ function installWireCapture(privateKey) {
     captures.push({ channel, text });
     assert.equal(text.includes(key), false, `${channel} leaked prefixed private key`);
     assert.equal(text.includes(keyNoPrefix), false, `${channel} leaked unprefixed private key`);
-    assert.equal(/shieldmcp\.sh|shield-mcp|fly\.dev/.test(text), false, `${channel} contacted shield-operated host`);
+    if (forbidShieldHost) {
+      assert.equal(/shieldmcp\.sh|shield-mcp|fly\.dev/.test(text), false, `${channel} contacted shield-operated host`);
+    }
   };
 
   for (const [mod, original] of [[http, originalHttpRequest], [https, originalHttpsRequest]]) {
@@ -55,6 +64,9 @@ function installWireCapture(privateKey) {
   globalThis.fetch = async (input, init = {}) => {
     const url = typeof input === 'string' ? input : input?.url ?? String(input);
     scan('fetch', `${url} ${JSON.stringify(init.headers ?? {})} ${typeof init.body === 'string' ? init.body : ''}`);
+    if (url.includes('/api/route')) {
+      return Response.json({ swapData: '0x1234', outAmount: '990000', priceImpact: 0.01 });
+    }
     if (url.includes('/quote/')) {
       return Response.json({ pathId: 'path-1', outAmounts: ['990000'], priceImpact: 0.01 });
     }
@@ -100,11 +112,12 @@ function fakeSession() {
 }
 
 describe('non-custodial outbound assertion', () => {
-  it('does not put the local private key or shield-operated hosts on the wire for mocked fund-moving flows', async () => {
+  it('self-host path (own Odos key): key never on the wire, no shield-operated host contacted', async () => {
     clearPolicyEnv();
     const privateKey = Wallet.createRandom().privateKey;
-    const captures = installWireCapture(privateKey);
-    process.env.ODOS_API_KEY = 'odos-test-key';
+    const captures = installWireCapture(privateKey, { forbidShieldHost: true });
+    process.env.ODOS_API_KEY = 'odos-test-key'; // self-host: route fetched directly from the aggregator
+    delete process.env.SHIELD_ODOS_ROUTE_URL;
     const session = fakeSession();
 
     await shield(session, 'USDC', 1n);
@@ -117,5 +130,21 @@ describe('non-custodial outbound assertion', () => {
     assert.equal(session.calls.some(([name]) => name === 'transfer'), true);
     assert.equal(session.calls.some(([name]) => name === 'withdraw'), true);
     assert.equal(session.calls.some(([name]) => name === 'swap'), true);
+  });
+
+  it('default path (hosted route helper): the helper is contacted but the key still never leaves', async () => {
+    clearPolicyEnv();
+    const privateKey = Wallet.createRandom().privateKey;
+    // The helper IS a shield-operated host — allow contacting it, but the key must never appear.
+    const captures = installWireCapture(privateKey, { forbidShieldHost: false });
+    delete process.env.ODOS_API_KEY; // no local key -> route via the hosted helper
+    delete process.env.SHIELD_ODOS_ROUTE_URL; // default: https://shieldmcp.sh/api/route
+    const session = fakeSession();
+
+    await privateSwap(session, 'USDC', 1n, 'USDT');
+
+    assert.equal(captures.some((c) => c.text.includes('shieldmcp.sh')), true); // helper was contacted
+    assert.equal(captures.some((c) => c.text.includes('api.odos.xyz')), false); // client never hits Odos directly
+    assert.equal(session.calls.some(([name]) => name === 'swap'), true); // swap still executed via the pool
   });
 });

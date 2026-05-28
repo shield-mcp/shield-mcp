@@ -35,7 +35,7 @@ Add it to the agent's MCP config as a **local** server (key in local env only):
       "env": {
         "SHIELD_RPC_URLS": "https://mainnet.base.org",
         "SHIELD_PRIVATE_KEY": "0x<dedicated agent wallet key — stays on this machine>",
-        "ODOS_API_KEY": "<optional, only needed for private_swap>"
+        "ODOS_API_KEY": "<optional — private_swap works without it; set only to self-host route fetching>"
       }
     }
   }
@@ -66,5 +66,11 @@ So a prompt-injected agent can't drain the wallet, set policy limits in the same
 ## Notes
 - Amounts are strings in base units (wei): USDC/USDT = 6 decimals, ETH = 18.
 - Tokens by symbol (`USDC`) or `0x` address on Base.
-- The local client talks directly to the chain + the privacy network's relayer; it
-  never routes through a shield//mcp-operated server.
+- `private_swap` needs **no Odos key**: the client fetches the DEX route from the
+  hosted helper (`SHIELD_ODOS_ROUTE_URL`, default `https://shieldmcp.sh/api/route`),
+  which returns **public route data only** — your private key and funds never touch
+  it, and the client re-validates every route before signing. To drop that
+  dependency, set your own free `ODOS_API_KEY` (docs.odos.xyz) or point
+  `SHIELD_ODOS_ROUTE_URL` at your own deployment of the helper.
+- Other than that optional route helper, the local client talks only to the chain
+  and the privacy network's relayer — your key never leaves this machine on any path.
