@@ -1,11 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { enforcePolicy, policyConfigured } from '../dist/policy.js';
+import { enforcePolicy, policyConfigured, resetPolicyStateForTests } from '../dist/policy.js';
+import { shield, unshield } from '../dist/operations.js';
 
 const clear = () => {
   delete process.env.SHIELD_RECIPIENT_ALLOWLIST;
   delete process.env.SHIELD_MAX_PER_TX;
   delete process.env.SHIELD_MAX_OPS_PER_DAY;
+  resetPolicyStateForTests();
 };
 
 test('no config = unrestricted', () => {
@@ -37,5 +39,50 @@ test('daily op limit blocks after N ops', () => {
   assert.doesNotThrow(() => enforcePolicy('shield', { amount: 1n }));
   assert.doesNotThrow(() => enforcePolicy('shield', { amount: 1n }));
   assert.throws(() => enforcePolicy('shield', { amount: 1n }), /daily op limit/);
+  clear();
+});
+
+test('rejected op does not burn daily budget', () => {
+  clear();
+  process.env.SHIELD_MAX_OPS_PER_DAY = '1';
+  process.env.SHIELD_MAX_PER_TX = '10';
+  assert.throws(() => enforcePolicy('unshield', { amount: 11n }), /exceeds SHIELD_MAX_PER_TX/);
+  assert.doesNotThrow(() => enforcePolicy('unshield', { amount: 10n }));
+  assert.throws(() => enforcePolicy('unshield', { amount: 1n }), /daily op limit/);
+  clear();
+});
+
+test('operations enforce policy before touching session state', async () => {
+  clear();
+  process.env.SHIELD_MAX_PER_TX = '10';
+  let refreshed = false;
+  const session = {
+    withWriteLock: (op) => op(),
+    refreshState: async () => {
+      refreshed = true;
+    },
+    ready: async () => {
+      throw new Error('should not boot hinkal');
+    },
+  };
+
+  await assert.rejects(() => shield(session, 'USDC', 11n), /exceeds SHIELD_MAX_PER_TX/);
+  assert.equal(refreshed, false);
+  clear();
+});
+
+test('recipient allowlist is case-insensitive at operation boundary', async () => {
+  clear();
+  const recipient = '0x00000000000000000000000000000000000000aA';
+  process.env.SHIELD_RECIPIENT_ALLOWLIST = recipient.toLowerCase();
+  const session = {
+    withWriteLock: (op) => op(),
+    refreshState: async () => undefined,
+    ready: async () => ({
+      withdraw: async () => '0xok',
+    }),
+  };
+
+  await assert.doesNotReject(() => unshield(session, 'USDC', 1n, recipient.toUpperCase()));
   clear();
 });

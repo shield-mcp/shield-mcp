@@ -37,6 +37,11 @@ export type PolicyCheck = { amount?: bigint; recipient?: string };
 let windowStart = Date.now();
 let opsInWindow = 0;
 
+export function resetPolicyStateForTests(): void {
+  windowStart = Date.now();
+  opsInWindow = 0;
+}
+
 /** Throw if the requested op violates the configured policy. Call before each write. */
 export function enforcePolicy(op: string, check: PolicyCheck): void {
   const { allowlist, maxPerTx, maxOpsPerDay } = readConfig();
