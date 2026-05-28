@@ -45,6 +45,15 @@ Use a **dedicated agent wallet** with a little ETH (gas) + the token to shield.
 First tool call warms up the shielded state (can take a few minutes). Deposits
 under $10k need no verification.
 
+## Bound the agent (strongly recommended for autonomous use)
+So a prompt-injected agent can't drain the wallet, set policy limits in the same
+`env`. The MCP enforces these before every fund-moving op:
+```
+"SHIELD_RECIPIENT_ALLOWLIST": "0xAddr1,0xAddr2",   // transfer/unshield only to these
+"SHIELD_MAX_PER_TX": "5000000",                     // max per op, base units (5 USDC)
+"SHIELD_MAX_OPS_PER_DAY": "20"                       // cap ops / 24h
+```
+
 ## Tools
 - `shield_status` — account, chain, compliance state
 - `get_shielded_address` — the agent's shielded receive address

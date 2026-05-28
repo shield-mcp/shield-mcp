@@ -5,6 +5,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { createSession } from './hinkal.js';
 import { buildServer } from './server.js';
 import { cleanErrorMessage } from './errors.js';
+import { policyConfigured } from './policy.js';
 
 process.on('uncaughtException', (e) => process.stderr.write(`[shield:fatal] ${cleanErrorMessage(e)}\n`));
 process.on('unhandledRejection', (e) => process.stderr.write(`[shield:fatal] ${cleanErrorMessage(e)}\n`));
@@ -18,6 +19,13 @@ async function main() {
   if (!rpcUrls) throw new Error('SHIELD_RPC_URLS required');
 
   // Local mode: file cache is fine (your own machine).
+  if (!policyConfigured()) {
+    process.stderr.write(
+      '[shield] WARNING: no policy guard set — the agent can move funds to ANY recipient up to the wallet balance. ' +
+        'Set SHIELD_RECIPIENT_ALLOWLIST / SHIELD_MAX_PER_TX / SHIELD_MAX_OPS_PER_DAY for autonomous use.\n',
+    );
+  }
+
   const session = createSession(privateKey, rpcUrls, { useFileCache: true });
   const server = buildServer(session);
   await server.connect(new StdioServerTransport());

@@ -1,6 +1,7 @@
 import { ExternalActionId } from '@hinkal/common';
 import { resolveToken, type HinkalSession } from './hinkal.js';
 import { buildOdosSwap } from './odos.js';
+import { enforcePolicy } from './policy.js';
 
 /**
  * Hinkal write flow, scoped to a session. Proof generation, anonymity-pool
@@ -22,6 +23,7 @@ export const privateSpendDelta = (amount: bigint) => -amount;
 /** Shield: deposit a public ERC20 into the Hinkal pool (public deposit). */
 export async function shield(session: HinkalSession, tokenOrSymbol: string, amount: bigint): Promise<string> {
   return session.withWriteLock(async () => {
+    enforcePolicy('shield', { amount });
     await session.refreshState();
     const token = resolveToken(tokenOrSymbol);
     const res = await (await session.ready()).deposit([token], [depositDelta(amount)]);
@@ -38,6 +40,7 @@ export async function privateTransfer(
   feeTokenOrSymbol?: string,
 ): Promise<string> {
   return session.withWriteLock(async () => {
+    enforcePolicy('private_transfer', { amount, recipient: recipientShieldedAddress });
     await session.refreshState();
     const token = resolveToken(tokenOrSymbol);
     const feeToken = feeTokenOrSymbol ? resolveToken(feeTokenOrSymbol).erc20TokenAddress : undefined;
@@ -55,6 +58,7 @@ export async function unshield(
   feeTokenOrSymbol?: string,
 ): Promise<string> {
   return session.withWriteLock(async () => {
+    enforcePolicy('unshield', { amount, recipient: recipientAddress });
     await session.refreshState();
     const token = resolveToken(tokenOrSymbol);
     const feeToken = feeTokenOrSymbol ? resolveToken(feeTokenOrSymbol).erc20TokenAddress : undefined;
@@ -79,6 +83,7 @@ export async function privateSwap(
   slippagePercent = 0.5,
 ): Promise<string> {
   return session.withWriteLock(async () => {
+    enforcePolicy('private_swap', { amount });
     await session.refreshState();
     const tokenIn = resolveToken(tokenInOrSymbol);
     const tokenOut = resolveToken(tokenOutOrSymbol);
