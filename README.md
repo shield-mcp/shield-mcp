@@ -68,25 +68,15 @@ compliant privacy and a criminal mixer.
 
 ## Get started
 
-**Hosted (no install).** Point your MCP-capable agent at the hosted endpoint and
-pass a dedicated agent wallet key as a header:
+> ⚠️ **Never send a private key to a remote server.** A hosted MCP that receives
+> your raw key is *custodial* and can move your funds — that is not what shield//mcp
+> is. shield//mcp is **non-custodial by design**: the privacy engine runs
+> **client-side** — your key and the zk proofs stay on your machine, and a
+> broadcast-only relayer never sees your key.
 
-```json
-{
-  "mcpServers": {
-    "shield": {
-      "url": "https://mcp.shieldmcp.sh/mcp",
-      "headers": { "x-shield-key": "0xYOUR_AGENT_WALLET_PRIVATE_KEY" }
-    }
-  }
-}
-```
-
-Non-custodial: your key lives only in your session's memory (never stored, logged,
-or written to disk) and is dropped when the session ends. The server holds no
-wallet and no funds. Use a dedicated agent wallet.
-
-Prefer to self-host locally? See **[TUTORIAL.md](./TUTORIAL.md)** for both paths.
+The client-side integration (a local skill + a broadcast-only relayer) is being
+built. Follow this repo for the release. See **[TUTORIAL.md](./TUTORIAL.md)** for
+the model and roadmap.
 
 ## Status
 

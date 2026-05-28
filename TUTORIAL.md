@@ -1,42 +1,21 @@
 # shield//mcp — tutorial
 
-Give your AI agent private, shielded transactions on Base. Two ways: the
-**hosted** endpoint (no install), or **self-host** locally.
+Give your AI agent private, shielded transactions on Base — **non-custodially**.
+
+> ⚠️ **Golden rule: never send a private key to a remote server.** A hosted MCP that
+> receives your raw key is *custodial* — whoever runs it can move your funds. That is
+> NOT shield//mcp. shield//mcp runs the privacy engine **client-side**: your key and
+> the zk proofs stay on your machine; a broadcast-only relayer never sees your key.
+
+**Status:** the client-side packaging (a local skill + a broadcast-only relayer) is
+being built. Until it ships, run shield//mcp **locally** (below), where your key never
+leaves your machine. Watch this repo for the release.
 
 ---
 
-## Option A — Hosted (remote MCP, no install) · recommended
+## Run it locally (self-host) — your key never leaves your machine
 
-Point your MCP-capable agent at the hosted shield//mcp endpoint and pass your
-wallet key as a header. Nothing to clone, build, or run.
-
-**Endpoint:** `https://mcp.shieldmcp.sh/mcp`
-
-Add it to your agent's MCP config (example):
-
-```json
-{
-  "mcpServers": {
-    "shield": {
-      "url": "https://mcp.shieldmcp.sh/mcp",
-      "headers": { "x-shield-key": "0xYOUR_AGENT_WALLET_PRIVATE_KEY" }
-    }
-  }
-}
-```
-
-> **Non-custodial.** Your key is used only in your session's server memory to
-> derive your shielded keypair and sign — it is **never stored, logged, or
-> written to disk**, and is dropped when your session ends. The server holds no
-> wallet and no funds. Use a **dedicated agent wallet**, not your main one.
-
-That's it — your agent now has the shield tools. Jump to [§3](#3-your-first-shielded-flow).
-
----
-
-## Option B — Self-host (local, stdio)
-
-Run the server yourself; your key never leaves your machine.
+> The runnable package is being prepared for release. Once published:
 
 ```bash
 git clone https://github.com/shield-mcp/shield-mcp.git && cd shield-mcp
