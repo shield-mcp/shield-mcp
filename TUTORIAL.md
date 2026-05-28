@@ -7,15 +7,16 @@ Give your AI agent private, shielded transactions on Base — **non-custodially*
 > NOT shield//mcp. shield//mcp runs the privacy engine **client-side**: your key and
 > the zk proofs stay on your machine; a broadcast-only relayer never sees your key.
 
-**Status:** the client-side packaging (a local skill + a broadcast-only relayer) is
-being built. Until it ships, run shield//mcp **locally** (below), where your key never
-leaves your machine. Watch this repo for the release.
+**Status:** the non-custodial **local** client is available now (below) — your key
+never leaves your machine. A hosted broadcast-only relayer (still non-custodial,
+never sees your key) is on the roadmap.
 
 ---
 
 ## Run it locally (self-host) — your key never leaves your machine
 
-> The runnable package is being prepared for release. Once published:
+There's also a ready-made **[skill](./skills/shield-mcp/SKILL.md)** that walks an
+agent through this setup.
 
 ```bash
 git clone https://github.com/shield-mcp/shield-mcp.git && cd shield-mcp

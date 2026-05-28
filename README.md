@@ -74,9 +74,17 @@ compliant privacy and a criminal mixer.
 > **client-side** — your key and the zk proofs stay on your machine, and a
 > broadcast-only relayer never sees your key.
 
-The client-side integration (a local skill + a broadcast-only relayer) is being
-built. Follow this repo for the release. See **[TUTORIAL.md](./TUTORIAL.md)** for
-the model and roadmap.
+**Run it locally (available now) — non-custodial:**
+
+```bash
+git clone https://github.com/shield-mcp/shield-mcp.git
+cd shield-mcp && npm install && npm run build
+```
+
+Add it to your agent as a **local** MCP (key stays in your local env, never sent
+anywhere) — see **[TUTORIAL.md](./TUTORIAL.md)** and the **[skill](./skills/shield-mcp/SKILL.md)**.
+A hosted, broadcast-only relayer (still non-custodial — never sees your key) is on
+the roadmap.
 
 ## Status
 

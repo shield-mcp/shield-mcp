@@ -1,0 +1,30 @@
+{
+  "name": "shield-mcp",
+  "version": "0.3.0",
+  "description": "Non-custodial, local MCP server for shielded (private) transactions on Base. Your key never leaves your machine.",
+  "bin": {
+    "shield-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "start": "node dist/index.js",
+    "test": "npm run build && node --test tests/*.mjs"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "25.9.1",
+    "typescript": "6.0.3"
+  },
+  "dependencies": {
+    "@hinkal/common": "0.2.31",
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "ethers": "6.16.0"
+  },
+  "comment:overrides": "Bump pure-JS transitive leaves to patched versions. Remaining advisories live in @hinkal/common's Solana/Tron stacks which the EVM/Base-only path never executes.",
+  "overrides": {
+    "axios": "^1.8.2",
+    "ws": "^8.18.1",
+    "underscore": "^1.13.7"
+  }
+}
