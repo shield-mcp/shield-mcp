@@ -68,11 +68,21 @@ export async function unshield(
 }
 
 /**
+ * Address to quote on the aggregator. Hinkal wraps native ETH -> WETH on-chain
+ * (deposit before the swap, unwrap after), so the Odos route must target the
+ * WRAPPED token, never the native zero address. Mirrors Hinkal's own getOdosPrice
+ * (`wrappedErc20TokenAddress ?? erc20TokenAddress`). h.swap() still receives the
+ * native token object so the SDK performs the wrap/unwrap.
+ */
+const routeAddress = (token: ReturnType<typeof resolveToken>): string =>
+  token.wrappedErc20TokenAddress ?? token.erc20TokenAddress;
+
+/**
  * Private swap inside the pool via Odos. Unshields tokenIn, runs the aggregator
  * swap, re-shields tokenOut — all private. The server builds the Odos route +
  * calldata; circuit shape is [tokenIn, tokenOut] with [-in, +out].
- * Validated live on Base (USDC→USDT). 1:1-ish/stable pairs are safest; volatile
- * pairs rely on the Odos slippage limit.
+ * Validated live on Base (USDC→USDT). Native ETH is supported (routed via WETH).
+ * 1:1-ish/stable pairs are safest; volatile pairs rely on the Odos slippage limit.
  */
 export async function privateSwap(
   session: HinkalSession,
@@ -88,9 +98,9 @@ export async function privateSwap(
     const tokenIn = resolveToken(tokenInOrSymbol);
     const tokenOut = resolveToken(tokenOutOrSymbol);
     const { swapData, outAmount } = await buildOdosSwap(
-      tokenIn.erc20TokenAddress,
+      routeAddress(tokenIn),
       amount,
-      tokenOut.erc20TokenAddress,
+      routeAddress(tokenOut),
       slippagePercent,
     );
     const feeToken = feeTokenOrSymbol ? resolveToken(feeTokenOrSymbol).erc20TokenAddress : undefined;
